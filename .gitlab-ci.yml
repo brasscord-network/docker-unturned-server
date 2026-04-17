@@ -4,8 +4,6 @@ stages:
 variables:
   DOCKER_BUILDKIT: "1"
   DOCKER_DRIVER: overlay2
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_TLS_CERTDIR: ""
 
 default:
   image: docker:27-cli
@@ -18,6 +16,16 @@ default:
       command:
         - --tls=false
   before_script:
+    - |
+      set -eu
+      if getent hosts docker >/dev/null 2>&1; then
+        export DOCKER_HOST="tcp://docker:2375"
+        export DOCKER_TLS_CERTDIR=""
+        echo "Using docker:dind service at ${DOCKER_HOST}"
+      else
+        unset DOCKER_HOST DOCKER_TLS_CERTDIR DOCKER_TLS_VERIFY DOCKER_CERT_PATH || true
+        echo "Using runner local Docker daemon"
+      fi
     - docker info
     - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
     - docker buildx create --use --driver docker-container
