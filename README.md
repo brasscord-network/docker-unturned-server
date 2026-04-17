@@ -26,3 +26,7 @@ To build, use `docker build . -t unturned:latest`.
 This project was originally forked from the ImperialPlugins/unturned-docker repository.
 Credit to the original maintainer of the project and developer of Rocketmod Trojaner.
 Credit to the CM2 team for the base STEAMCMD docker image.
+
+## License
+
+We will continue to follow the MIT license as both the ImperialPlugins repository and CM2 SteamCMD image follow the MIT.
