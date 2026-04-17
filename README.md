@@ -12,7 +12,7 @@ The repository ships two build targets:
 Build and start the default Compose stack:
 
 ```sh
-docker compose up -d
+docker compose -f vanilla.docker-compose.yml up -d
 ```
 
 Make sure to forward ports `27015` and `27016` on both TCP and UDP, or use the server code to direct connect.
