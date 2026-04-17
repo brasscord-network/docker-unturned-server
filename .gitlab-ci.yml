@@ -30,17 +30,18 @@ default:
         registry_host="${CI_REGISTRY#http://}"
         registry_host="${registry_host#https://}"
         registry_host="${registry_host%%/*}"
+        cert_path="${CI_PROJECT_DIR}/.gitlab/buildkit/certs/registry-ca.pem"
 
         mkdir -p .gitlab/buildkit/certs
 
         if glab auth login --job-token "$CI_JOB_TOKEN" --hostname "$CI_SERVER_FQDN" --api-protocol "$CI_SERVER_PROTOCOL" >/dev/null 2>&1 \
-          && glab -R "$CI_PROJECT_PATH" securefile download --name j6gitlab.pem --path .gitlab/buildkit/certs/registry-ca.pem >/dev/null 2>&1; then
+          && glab -R "$CI_PROJECT_PATH" securefile download --name j6gitlab.pem --path "$cert_path" >/dev/null 2>&1; then
           echo "Using secure file j6gitlab.pem for ${registry_host}"
         elif [ -n "${CI_REGISTRY_CA_CERT:-}" ]; then
-          printf '%s\n' "$CI_REGISTRY_CA_CERT" > .gitlab/buildkit/certs/registry-ca.pem
+          printf '%s\n' "$CI_REGISTRY_CA_CERT" > "$cert_path"
           echo "Using CI_REGISTRY_CA_CERT for ${registry_host}"
         elif [ -n "${CI_SERVER_TLS_CA_FILE:-}" ] && [ -f "${CI_SERVER_TLS_CA_FILE}" ]; then
-          cp "${CI_SERVER_TLS_CA_FILE}" .gitlab/buildkit/certs/registry-ca.pem
+          cp "${CI_SERVER_TLS_CA_FILE}" "$cert_path"
           echo "Using CI_SERVER_TLS_CA_FILE for ${registry_host}"
         else
           return 1
@@ -48,12 +49,12 @@ default:
 
         if command -v update-ca-certificates >/dev/null 2>&1; then
           mkdir -p /usr/local/share/ca-certificates
-          cp .gitlab/buildkit/certs/registry-ca.pem /usr/local/share/ca-certificates/ci-registry-ca.crt
+          cp "$cert_path" /usr/local/share/ca-certificates/ci-registry-ca.crt
           update-ca-certificates
         fi
 
-        printf '[registry."%s"]\n  ca = ["/etc/buildkit/certs/registry-ca.pem"]\n' \
-          "${registry_host}" > .gitlab/buildkit/buildkitd.toml
+        printf '[registry."%s"]\n  ca = ["%s"]\n' \
+          "${registry_host}" "${cert_path}" > .gitlab/buildkit/buildkitd.toml
         return 0
       }
 
