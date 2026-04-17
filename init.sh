@@ -23,6 +23,15 @@ fail() {
     exit 1
 }
 
+trim_whitespace() {
+    local value="$1"
+
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+
+    printf '%s' "$value"
+}
+
 validate_environment() {
     if [[ -z "$SERVER_ID" ]]; then
         fail "SERVER_ID must not be empty."
@@ -32,6 +41,13 @@ validate_environment() {
         true|false) ;;
         *)
             fail "UPDATE_ON_START must be either 'true' or 'false'."
+            ;;
+    esac
+
+    case "$LDM_ENABLED" in
+        true|false) ;;
+        *)
+            fail "LDM_ENABLED must be either 'true' or 'false'."
             ;;
     esac
 
@@ -110,21 +126,23 @@ configure_server_state() {
 }
 
 configure_workshop() {
-    local trimmed_ids="${WORKSHOP_FILE_IDS//[[:space:]]/}"
+    local has_workshop_ids="${WORKSHOP_FILE_IDS//[[:space:]]/}"
     local server_dir="$GAME_INSTALL_DIR/Servers/$SERVER_ID"
     local -a ids=()
     local raw_id
     local rendered_ids=""
     local workshop_count=0
 
-    if [[ -z "$trimmed_ids" ]]; then
+    if [[ -z "$has_workshop_ids" ]]; then
         log "No WORKSHOP_FILE_IDS provided; leaving existing workshop config unchanged."
         return
     fi
 
-    IFS=',' read -r -a ids <<< "$trimmed_ids"
+    IFS=',' read -r -a ids <<< "$WORKSHOP_FILE_IDS"
 
     for raw_id in "${ids[@]}"; do
+        raw_id="$(trim_whitespace "$raw_id")"
+
         if [[ -z "$raw_id" ]]; then
             fail "WORKSHOP_FILE_IDS contains an empty item."
         fi

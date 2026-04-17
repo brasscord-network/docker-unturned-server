@@ -71,7 +71,7 @@ They are also wired for a weekly rebuild that uses `--pull` to refresh from the 
 Weekly rebuild behavior:
 
 - GitHub Actions runs every Sunday at `05:00 UTC` via the workflow cron schedule.
-- GitLab CI runs on scheduled pipelines; create a project pipeline schedule in the GitLab UI for `0 5 * * 0` on the default branch to enable the weekly rebuild.
+- The internal GitLab CI runs on scheduled pipelines
 
 Published tags follow the same target-oriented pattern:
 
