@@ -18,8 +18,43 @@ default:
   before_script:
     - |
       set -eu
+      if ! command -v glab >/dev/null 2>&1; then
+        apk add --no-cache glab ca-certificates
+      fi
+
       docker_ready() {
         docker info >/dev/null 2>&1
+      }
+
+      configure_registry_ca() {
+        registry_host="${CI_REGISTRY#http://}"
+        registry_host="${registry_host#https://}"
+        registry_host="${registry_host%%/*}"
+
+        mkdir -p .gitlab/buildkit/certs
+
+        if glab auth login --job-token "$CI_JOB_TOKEN" --hostname "$CI_SERVER_FQDN" --api-protocol "$CI_SERVER_PROTOCOL" >/dev/null 2>&1 \
+          && glab -R "$CI_PROJECT_PATH" securefile download --name j6gitlab.pem --path .gitlab/buildkit/certs/registry-ca.pem >/dev/null 2>&1; then
+          echo "Using secure file j6gitlab.pem for ${registry_host}"
+        elif [ -n "${CI_REGISTRY_CA_CERT:-}" ]; then
+          printf '%s\n' "$CI_REGISTRY_CA_CERT" > .gitlab/buildkit/certs/registry-ca.pem
+          echo "Using CI_REGISTRY_CA_CERT for ${registry_host}"
+        elif [ -n "${CI_SERVER_TLS_CA_FILE:-}" ] && [ -f "${CI_SERVER_TLS_CA_FILE}" ]; then
+          cp "${CI_SERVER_TLS_CA_FILE}" .gitlab/buildkit/certs/registry-ca.pem
+          echo "Using CI_SERVER_TLS_CA_FILE for ${registry_host}"
+        else
+          return 1
+        fi
+
+        if command -v update-ca-certificates >/dev/null 2>&1; then
+          mkdir -p /usr/local/share/ca-certificates
+          cp .gitlab/buildkit/certs/registry-ca.pem /usr/local/share/ca-certificates/ci-registry-ca.crt
+          update-ca-certificates
+        fi
+
+        printf '[registry."%s"]\n  ca = ["/etc/buildkit/certs/registry-ca.pem"]\n' \
+          "${registry_host}" > .gitlab/buildkit/buildkitd.toml
+        return 0
       }
 
       if getent hosts docker >/dev/null 2>&1; then
@@ -47,8 +82,15 @@ default:
         exit 1
       fi
     - docker info
+    - |
+      set -eu
+      if configure_registry_ca; then
+        docker buildx create --use --driver docker-container --buildkitd-config .gitlab/buildkit/buildkitd.toml
+      else
+        echo "No custom registry CA configured; using default trust store"
+        docker buildx create --use --driver docker-container
+      fi
     - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
-    - docker buildx create --use --driver docker-container
     - docker buildx inspect --bootstrap
 
 publish:
