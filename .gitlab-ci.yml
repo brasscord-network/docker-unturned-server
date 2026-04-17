@@ -11,6 +11,9 @@ variables:
 
 default:
   image: docker:27-cli
+  tags:
+    - "instance-runner"
+    - "linux"
   services:
     - name: docker:27-dind
   before_script:
@@ -21,6 +24,9 @@ default:
 
 publish:
   stage: publish
+  tags:
+    - "instance-runner"
+    - "linux"
   parallel:
     matrix:
       - TARGET: vanilla
