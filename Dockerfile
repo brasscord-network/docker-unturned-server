@@ -1,28 +1,52 @@
-FROM cm2network/steamcmd:steam-trixie
+FROM cm2network/steamcmd:steam-trixie AS vanilla
 
 LABEL maintainer="Richard Bates<richard.batesiii.dev@gmail.com>"
 
-ARG PUID 1000
-ARG PGID 1000
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-ENV GAME_INSTALL_DIR=/home/steam/Unturned
-ENV GAME_ID=1110390
-ENV SERVER_NAME=server
-ENV STEAM_USERNAME=anonymous
-ENV STEAMCMD_DIR=/home/steam/steamcmd
+USER root
 
-EXPOSE 27015
-EXPOSE 27016
+ENV GAME_INSTALL_DIR=/home/steam/Unturned \
+    SERVER_ID=server \
+    UPDATE_ON_START=false \
+    WORKSHOP_FILE_IDS= \
+    STEAMCMD_DIR=/home/steam/steamcmd \
+    LDM_ENABLED=false \
+    LDM_INSTALL_DIR=/opt/ldm
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl jq unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p "$GAME_INSTALL_DIR" "$LDM_INSTALL_DIR" \
+    && chown -R steam:steam "$GAME_INSTALL_DIR" "$LDM_INSTALL_DIR"
+
+COPY --chown=steam:steam init.sh /usr/local/bin/init.sh
+RUN chmod 0755 /usr/local/bin/init.sh
+
+EXPOSE 27015/tcp
+EXPOSE 27015/udp
+EXPOSE 27016/tcp
+EXPOSE 27016/udp
 
 VOLUME ["$GAME_INSTALL_DIR"]
 
 USER steam
 WORKDIR $STEAMCMD_DIR
 
-# Install Unturned
-RUN mkdir -p $GAME_INSTALL_DIR
-RUN bash ./steamcmd.sh +force_install_dir $GAME_INSTALL_DIR +login $STEAM_USERNAME $STEAM_PASSWORD $STEAM_GUARD_TOKEN $STEAM_CMD_ARGS +@sSteamCmdForcePlatformBitness 64 +app_update $GAME_ID +quit
+ENTRYPOINT ["/usr/local/bin/init.sh"]
 
-COPY init.sh .
+FROM vanilla AS ldm
 
-ENTRYPOINT ["./init.sh"]
+ENV LDM_ENABLED=true \
+    LDM_REPOSITORY=SmartlyDressedGames/Legally-Distinct-Missile \
+    LDM_VERSION=v4.9.3.18
+
+RUN set -eux; \
+    api_url="https://api.github.com/repos/${LDM_REPOSITORY}/releases/tags/${LDM_VERSION}"; \
+    asset_url="$(curl -fsSL "$api_url" | jq -er '[.assets[] | select(.name | endswith(".zip")) | .browser_download_url][0]')"; \
+    curl -fsSL "$asset_url" -o /tmp/ldm.zip; \
+    rm -rf "${LDM_INSTALL_DIR:?}/"*; \
+    unzip -q /tmp/ldm.zip -d "$LDM_INSTALL_DIR"; \
+    test -f "$LDM_INSTALL_DIR/Rocket.Unturned/Rocket.Unturned.module"; \
+    rm -f /tmp/ldm.zip

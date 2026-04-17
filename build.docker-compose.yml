@@ -1,0 +1,27 @@
+---
+services:
+  server:
+    image: "unturned-docker:vanilla"
+    ports:
+      - "27015:27015/tcp"
+      - "27015:27015/udp"
+      - "27016:27016/tcp"
+      - "27016:27016/udp"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: vanilla
+    stdin_open: true
+    tty: true
+    environment:
+      SERVER_ID: server
+      UPDATE_ON_START: "true"
+      WORKSHOP_FILE_IDS: ""
+    volumes:
+      - data:/home/steam/Unturned
+    # Switch to the LDM variant by changing the image tag and build target to `ldm`.
+    # command: ["-SomeUnturnedArg"]
+    restart: unless-stopped
+
+volumes:
+  data:
