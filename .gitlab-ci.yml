@@ -4,10 +4,8 @@ stages:
 variables:
   DOCKER_BUILDKIT: "1"
   DOCKER_DRIVER: overlay2
-  DOCKER_HOST: tcp://docker:2376
-  DOCKER_TLS_CERTDIR: "/certs"
-  DOCKER_TLS_VERIFY: "1"
-  DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
 
 default:
   image: docker:27-cli
@@ -16,6 +14,9 @@ default:
     - "linux"
   services:
     - name: docker:27-dind
+      alias: docker
+      command:
+        - --tls=false
   before_script:
     - docker info
     - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
