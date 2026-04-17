@@ -15,7 +15,7 @@ ENV GAME_INSTALL_DIR=/home/steam/Unturned \
     LDM_INSTALL_DIR=/opt/ldm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl jq unzip \
+    && apt-get install -y --no-install-recommends ca-certificates curl unzip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p "$GAME_INSTALL_DIR" "$LDM_INSTALL_DIR" \
@@ -43,8 +43,7 @@ ENV LDM_ENABLED=true \
     LDM_VERSION=v4.9.3.18
 
 RUN set -eux; \
-    api_url="https://api.github.com/repos/${LDM_REPOSITORY}/releases/tags/${LDM_VERSION}"; \
-    asset_url="$(curl -fsSL "$api_url" | jq -er '[.assets[] | select(.name | endswith(".zip")) | .browser_download_url][0]')"; \
+    asset_url="https://github.com/${LDM_REPOSITORY}/releases/download/${LDM_VERSION}/Rocket.Unturned.zip"; \
     curl -fsSL "$asset_url" -o /tmp/ldm.zip; \
     rm -rf "${LDM_INSTALL_DIR:?}/"*; \
     unzip -q /tmp/ldm.zip -d "$LDM_INSTALL_DIR"; \
