@@ -1,5 +1,7 @@
 # Unturned Docker
 
+[![Publish Images](https://github.com/brasscord-network/docker-unturned-server/actions/workflows/publish.yml/badge.svg?branch=master)](https://github.com/brasscord-network/docker-unturned-server/actions/workflows/publish.yml)
+
 Docker-focused Unturned dedicated server images built on top of `cm2network/steamcmd`.
 
 The repository ships two build targets:
