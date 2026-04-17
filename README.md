@@ -62,8 +62,8 @@ The `ldm` target downloads `Rocket.Unturned.zip` from the GitHub release asset f
 
 The repository includes native publish pipelines for both GitHub and GitLab:
 
-- GitHub Actions publishes to `ghcr.io/<owner>/<repo>`.
-- GitLab CI publishes to the project container registry at `$CI_REGISTRY_IMAGE`.
+- GitHub Actions publishes to `ghcr.io/brasscord-network/docker-unturned-server`.
+- GitLab CI/CD is maintained privately.
 
 Both pipelines build the `vanilla` and `ldm` targets on pushes to `master`, on git tags, and on manual runs.
 They are also wired for a weekly rebuild that uses `--pull` to refresh from the latest base image.
