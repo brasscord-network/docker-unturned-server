@@ -15,7 +15,7 @@ docker compose -f docker-compose.yml up --build -d
 
 ## Server Type
 
-The default setup only supports Vanilla Unturned. I have plans to include support for LDM.
+The default setup only supports Vanilla Unturned. I have plans to include support for LDM and Built-in Workshop Support.
 
 ## Building
 
