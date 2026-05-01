@@ -93,6 +93,9 @@ run_steamcmd_app_update() {
         fi
 
         if (( attempt < max_attempts )); then
+            if [[ -f "$GAME_INSTALL_DIR/steamapps/appmanifest_1110390.acf" ]]; then
+                rm "$GAME_INSTALL_DIR/steamapps/appmanifest_1110390.acf"
+            fi
             log "SteamCMD app_update failed on attempt ${attempt}; retrying after a short delay."
             sleep 3
         fi
