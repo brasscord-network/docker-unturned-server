@@ -9,12 +9,51 @@ The repository ships two build targets:
 - `vanilla`: runtime bootstrap for the official dedicated server.
 - `ldm`: the same runtime bootstrap plus `Legally Distinct Missile` pinned to `v4.9.3.18`.
 
+Futures builds after v1.x will use Golang to build.
+
 ## Quick Start
 
-Build and start the default Compose stack:
+### Compose Method:
+
+1. Create a new file called compose.yml
+2. You can insert this compose below or use one of the example composes
+
+```yaml
+services:
+  server:
+    image: ghcr.io/brasscord-network/docker-unturned-server:vanilla
+    tty: true
+    stdin_open: true
+    ports:
+      - "27015:27015/tcp"
+      - "27015:27015/udp"
+      - "27016:27016/tcp"
+      - "27016:27016/udp"
+    volumes:
+      - data:/home/steam/Unturned
+
+volumes:
+  data:
+```
+
+3. Once you have this compose setup, you can run the command below.
 
 ```sh
-docker compose -f vanilla.docker-compose.yml up -d
+docker compose up -d
+```
+
+### Docker Run Method
+
+You can use the command below to setup the container without a compose file.
+
+```sh
+docker run -dit \
+-v data:/home/steam/Unturned \
+-p 27015:27015/tcp \
+-p 27015:27015/udp \
+-p 27016:27016/tcp \
+-p 27016:27016/udp \
+ghcr.io/brasscord-network/docker-unturned-server:vanilla  
 ```
 
 Make sure to forward ports `27015` and `27016` on both TCP and UDP, or use the server code to direct connect.
@@ -47,13 +86,13 @@ If `WORKSHOP_FILE_IDS` is unset or empty, the container leaves any existing `Wor
 Build the vanilla image:
 
 ```sh
-docker build --target vanilla -t unturned-docker:vanilla .
+docker build --target vanilla -t docker-unturned-server:vanilla .
 ```
 
 Build the LDM image variant:
 
 ```sh
-docker build --target ldm -t unturned-docker:ldm .
+docker build --target ldm -t docker-unturned-server:ldm .
 ```
 
 The `ldm` target downloads `Rocket.Unturned.zip` from the GitHub release asset for `SmartlyDressedGames/Legally-Distinct-Missile` tag `v4.9.3.18` and installs it into `Modules/Rocket.Unturned` at container startup.
@@ -94,8 +133,8 @@ docker run --rm \
   -e STEAM_USERNAME=example \
   -e STEAM_PASSWORD=example \
   -e STEAM_GUARD_CODE=12345 \
-  -v unturned-data:/home/steam/Unturned \
-  unturned-docker:vanilla
+  -v data:/home/steam/Unturned \
+  ghcr.io/brasscord-network/docker-unturned-server:vanilla
 ```
 
 Set Workshop item IDs:
@@ -103,8 +142,8 @@ Set Workshop item IDs:
 ```sh
 docker run --rm \
   -e WORKSHOP_FILE_IDS=123456789,987654321 \
-  -v unturned-data:/home/steam/Unturned \
-  unturned-docker:vanilla
+  -v data:/home/steam/Unturned \
+  ghcr.io/brasscord-network/docker-unturned-server:vanilla
 ```
 
 ## Credits
