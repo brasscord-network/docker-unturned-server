@@ -10,6 +10,11 @@ services:
     stdin_open: true
     tty: true
     pull_policy: weekly
+    # Docker 29.4.2 SteamCMD workaround:
+    # 1. Run ./scripts/generate-steamcmd-seccomp-profile.sh ./steamcmd-seccomp.json
+    # 2. Uncomment the lines below after copying this file to your host.
+    # security_opt:
+    #   - seccomp=./steamcmd-seccomp.json
     environment:
       SERVER_ID: server
       UPDATE_ON_START: "false"

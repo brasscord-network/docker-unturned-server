@@ -13,6 +13,11 @@ services:
       target: vanilla
     stdin_open: true
     tty: true
+    # Docker 29.4.2 SteamCMD workaround:
+    # 1. Run ./scripts/generate-steamcmd-seccomp-profile.sh ./steamcmd-seccomp.json
+    # 2. Uncomment the lines below.
+    # security_opt:
+    #   - seccomp=./steamcmd-seccomp.json
     environment:
       SERVER_ID: server
       UPDATE_ON_START: "false"

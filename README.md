@@ -31,6 +31,9 @@ services:
       - "27016:27016/udp"
     volumes:
       - data:/home/steam/Unturned
+    # Docker 29.4.2 SteamCMD workaround:
+    # security_opt:
+    #   - seccomp=./steamcmd-seccomp.json
 
 volumes:
   data:
@@ -55,6 +58,42 @@ docker run -dit \
 -p 27016:27016/udp \
 ghcr.io/brasscord-network/docker-unturned-server:vanilla  
 ```
+
+## Docker 29.4.2 SteamCMD Workaround
+
+As of May 1, 2026, Docker Engine `29.4.2` can block the socket path SteamCMD uses when the container runs with Docker's built-in seccomp profile. The upstream tracking issue is [`moby/moby#52506`](https://github.com/moby/moby/issues/52506).
+
+This image cannot fix that from inside the container because seccomp is enforced by Docker on the host. The workaround needs to be applied when the container is started.
+
+Generate a targeted seccomp profile from Docker's current default profile:
+
+```sh
+./scripts/generate-steamcmd-seccomp-profile.sh ./steamcmd-seccomp.json
+```
+
+Use that generated profile with Compose:
+
+```yaml
+services:
+  server:
+    security_opt:
+      - seccomp=./steamcmd-seccomp.json
+```
+
+Or with `docker run`:
+
+```sh
+docker run -dit \
+  --security-opt seccomp=./steamcmd-seccomp.json \
+  -v data:/home/steam/Unturned \
+  -p 27015:27015/tcp \
+  -p 27015:27015/udp \
+  -p 27016:27016/tcp \
+  -p 27016:27016/udp \
+  ghcr.io/brasscord-network/docker-unturned-server:vanilla
+```
+
+The generated profile keeps seccomp enabled, but it intentionally re-allows `AF_ALG` and `socketcall` for SteamCMD compatibility. Treat it as a temporary workaround on trusted hosts until Docker ships an upstream fix. If you need a short-lived fallback for testing, `--security-opt seccomp=unconfined` also works but is broader than the generated profile.
 
 Make sure to forward ports `27015` and `27016` on both TCP and UDP, or use the server code to direct connect.
 Additional configurations can be done through mounting the volume or execing inside the container to use `nano` to edit configs.

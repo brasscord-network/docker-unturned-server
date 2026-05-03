@@ -32,6 +32,24 @@ trim_whitespace() {
     printf '%s' "$value"
 }
 
+steamcmd_log_has_docker_seccomp_error() {
+    local log_path="$1"
+
+    grep -Fq 'CreateBoundSocket: failed to create socket, error [no name available] (38)' "$log_path"
+}
+
+fail_for_docker_seccomp_error() {
+    cat >&2 <<'EOF'
+[init] ERROR: SteamCMD failed because Docker's seccomp profile blocked the socket path it needs.
+[init] ERROR: This is currently known to affect Docker Engine 29.4.2 with the built-in seccomp profile.
+[init] ERROR: Start the container with a custom seccomp profile that re-allows AF_ALG (family 38) and socketcall,
+[init] ERROR: or use the less restrictive temporary fallback `--security-opt seccomp=unconfined`.
+[init] ERROR: Repository workaround instructions:
+[init] ERROR: https://github.com/brasscord-network/docker-unturned-server#docker-2942-steamcmd-workaround
+EOF
+    exit 1
+}
+
 validate_environment() {
     if [[ -z "$SERVER_ID" ]]; then
         fail "SERVER_ID must not be empty."
@@ -65,6 +83,7 @@ run_steamcmd_app_update() {
     )
     local attempt
     local max_attempts=2
+    local steamcmd_log
 
     if [[ -n "$STEAM_USERNAME" ]]; then
         log "Using authenticated SteamCMD login for ${STEAM_USERNAME}."
@@ -88,9 +107,19 @@ run_steamcmd_app_update() {
             log "Retrying SteamCMD app_update (attempt ${attempt} of ${max_attempts})."
         fi
 
-        if "${steamcmd_args[@]}"; then
+        steamcmd_log="$(mktemp)"
+
+        if "${steamcmd_args[@]}" > >(tee "$steamcmd_log") 2> >(tee -a "$steamcmd_log" >&2); then
+            rm -f "$steamcmd_log"
             return
         fi
+
+        if steamcmd_log_has_docker_seccomp_error "$steamcmd_log"; then
+            rm -f "$steamcmd_log"
+            fail_for_docker_seccomp_error
+        fi
+
+        rm -f "$steamcmd_log"
 
         if (( attempt < max_attempts )); then
             if [[ -f "$GAME_INSTALL_DIR/steamapps/appmanifest_1110390.acf" ]]; then
